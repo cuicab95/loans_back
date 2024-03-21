@@ -1,5 +1,8 @@
 from django.urls import path
+from rest_framework import routers
+from . import views
 
-urlpatterns = [
-
-]
+app_name = "customer"
+router = routers.SimpleRouter()
+router.register("customer", views.CustomerViewSet)
+urlpatterns = router.urls
