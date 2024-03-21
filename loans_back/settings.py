@@ -40,6 +40,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'rest_framework',
     'loans_back.apps.security',
+    'loans_back.apps.customer',
     'drf_yasg',
 ]
 
