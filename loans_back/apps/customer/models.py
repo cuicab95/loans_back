@@ -49,7 +49,11 @@ class LoanPayments(models.Model):
     start_date = models.DateField()
     end_date = models.DateField()
     amount = models.FloatField()
-    status = models.CharField(max_length=10, choices=PaymentStatusChoices.choices)
+    status = models.CharField(
+        max_length=10,
+        choices=PaymentStatusChoices.choices,
+        default=PaymentStatusChoices.pending
+    )
 
     class Meta:
         verbose_name = "Loan payment"
