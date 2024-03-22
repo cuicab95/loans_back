@@ -1,6 +1,7 @@
 from loans_back.config.tests import LoanConfigTest
-from loans_back.apps.customer.catalogs import GenderChoices, LoadKindChoices, PaymentIntervalChoices
+from loans_back.apps.customer.catalogs import GenderChoices, LoadKindChoices, PaymentIntervalChoices, PaymentStatusChoices
 from rest_framework import status
+from .messages import ERROR_LOAN_PAYMENT_PAID
 
 
 class CustomerTestCase(LoanConfigTest):
@@ -109,3 +110,34 @@ class LoanTestCase(LoanConfigTest):
     def test_customer_delete(self):
         response = self.client.delete(f"{self.path}{self.loan.id}/")
         self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+
+    def test_loan_update(self):
+        data_request = {
+            "loan_kind": LoadKindChoices.education,
+            "amount": 7500,
+            "payment_interval": PaymentIntervalChoices.year,
+            "payment_duration": 5,
+            "interest_rate": 35
+        }
+        response = self.client.patch(f"{self.path}{self.loan.id}/", data=data_request)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertNotEqual(response.data.get('interest_rate'), self.loan.interest_rate)
+        self.assertNotEqual(response.data.get('amount'), self.loan.amount)
+        payments = response.data.get('load_payments', [])
+        sum_payments = sum(map(lambda x: x['amount'], payments))
+        self.assertEqual(sum_payments, response.data.get('total_amount'))
+
+    def test_error_loan_update_with_payment_paid(self):
+        loan_payment = self.loan.payments.first()
+        loan_payment.status = PaymentStatusChoices.paid
+        loan_payment.save()
+        data_request = {
+            "loan_kind": LoadKindChoices.education,
+            "amount": 7500,
+            "payment_interval": PaymentIntervalChoices.year,
+            "payment_duration": 5,
+            "interest_rate": 35
+        }
+        response = self.client.patch(f"{self.path}{self.loan.id}/", data=data_request)
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(response.data[0], ERROR_LOAN_PAYMENT_PAID)
