@@ -1,8 +1,9 @@
 from rest_framework.test import APITestCase
-from loans_back.apps.customer.factories import CustomerFactory
+from loans_back.apps.customer.factories import CustomerFactory, LoanFactory
 from django.contrib.auth.models import User
 from rest_framework_simplejwt.settings import api_settings
-from loans_back.apps.customer.catalogs import GenderChoices
+from loans_back.apps.customer.catalogs import GenderChoices, LoadKindChoices, PaymentIntervalChoices
+from loans_back.apps.customer.services import LoanService
 
 
 class LoanConfigTest(APITestCase):
@@ -45,4 +46,21 @@ class LoanConfigTest(APITestCase):
         if response.status_code == 200:
             self.update_token(response.json().get("access"))
         return response
+
+    def create_loan(self, customer, adviser):
+        amount = 34000
+        interest_rate = 45
+        kwargs = {
+            "customer": customer,
+            "loan_kind": LoadKindChoices.debt_payment,
+            "amount": amount,
+            "payment_interval": PaymentIntervalChoices.month,
+            "payment_duration": 12,
+            "interest_rate": interest_rate,
+            "total_amount": LoanService.total_amount_with_interest_rate(amount, interest_rate),
+            "adviser": adviser
+        }
+        loan = LoanFactory(**kwargs)
+        LoanService.create_loan_payments(loan)
+        return loan
 

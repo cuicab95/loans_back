@@ -1,5 +1,5 @@
 from loans_back.config.tests import LoanConfigTest
-from loans_back.apps.customer.catalogs import GenderChoices
+from loans_back.apps.customer.catalogs import GenderChoices, LoadKindChoices, PaymentIntervalChoices
 from rest_framework import status
 
 
@@ -67,3 +67,45 @@ class CustomerTestCase(LoanConfigTest):
         response = self.client.patch(f"{self.path}{self.customer_2.id}/", data=data_request)
         self.assertNotEqual(response.data["first_name"], self.customer_2.first_name)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+
+class LoanTestCase(LoanConfigTest):
+    def setUp(self):
+        self.user = self.create_user()
+        self.customer = self.create_customer(first_name="Pedro", last_name="Aguilar")
+        self.customer_2 = self.create_customer(first_name="Miguel", last_name="Tun")
+        self.path = "/customer/loan/"
+        self.authenticate(self.user)
+        self.loan = self.create_loan(self.customer, self.user)
+        self.loan_2 = self.create_loan(self.customer_2, self.user)
+
+    def test_customer_list(self):
+        response = self.client.get(f"{self.path}")
+        data = response.data
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(data.get("results")), 2)
+
+    def test_customer_retrieve(self):
+        response = self.client.get(f"{self.path}{self.loan.id}/")
+        data = response.data
+        self.assertEqual(data["customer"], self.customer.id)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+    def test_customer_create(self):
+        data_request = {
+            "customer": self.customer.id,
+            "loan_kind": LoadKindChoices.debt_payment,
+            "amount": 30000,
+            "payment_interval": PaymentIntervalChoices.month,
+            "payment_duration": 12,
+            "interest_rate": 30
+        }
+        response = self.client.post(f"{self.path}", data=data_request)
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        payments = response.data.get('load_payments', [])
+        sum_payments = sum(map(lambda x: x['amount'], payments))
+        self.assertEqual(sum_payments, response.data.get('total_amount'))
+
+    def test_customer_delete(self):
+        response = self.client.delete(f"{self.path}{self.loan.id}/")
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
