@@ -46,3 +46,32 @@ class LoanService:
             loan.payments.all().delete()
             return True
         return False
+
+    @classmethod
+    def refund_payment_to_loan(cls, instance):
+        loan = instance.loan
+        new_amount = loan.amount - instance.amount
+        loan.amount = new_amount
+        total_amount = cls.total_amount_with_interest_rate(
+            new_amount,
+            loan.interest_rate,
+        )
+        loan.total_amount = total_amount
+        loan.save()
+        loan_payments = loan.payments.filter(status=PaymentStatusChoices.pending)
+        amount_balance = new_amount
+        for payment in loan_payments:
+            if amount_balance == 0:
+                break
+            if payment.amount <= amount_balance:
+                payment.status = PaymentStatusChoices.paid
+                payment.save()
+                amount_balance -= payment.amount
+            else:
+                payment.amount -= amount_balance
+                payment.save()
+                amount_balance = 0
+        #loan.payments.all().delete()
+        #cls.create_loan_payments(loan)
+
+

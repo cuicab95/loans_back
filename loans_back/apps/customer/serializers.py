@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Customer, Loan, LoanPayments
+from .models import Customer, Loan, LoanPayments, RefundPayment
 from django.contrib.auth.models import User
 
 
@@ -72,3 +72,13 @@ class LoanSerializer(serializers.ModelSerializer):
             'adviser': {'required': False},
             'total_amount': {'required': False},
         }
+
+
+class RefundPaymentSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = RefundPayment
+        fields = (
+            "loan",
+            "payment_date",
+            "amount"
+        )

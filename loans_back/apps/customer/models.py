@@ -59,3 +59,16 @@ class LoanPayments(models.Model):
         verbose_name = "Loan payment"
         verbose_name_plural = "Loans payments"
 
+
+class RefundPayment(BasicFields):
+    loan = models.ForeignKey(Loan, on_delete=models.CASCADE, related_name="refunds")
+    payment_date = models.DateField()
+    amount = models.FloatField()
+
+    class Meta:
+        verbose_name = "Refund payment"
+        verbose_name_plural = "Refund payments"
+
+
+
+

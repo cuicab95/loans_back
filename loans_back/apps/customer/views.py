@@ -3,8 +3,8 @@ from rest_framework.permissions import IsAuthenticated
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.filters import SearchFilter, OrderingFilter
 from loans_back.config.paginations import DefaultPagination
-from .models import Customer, Loan
-from .serializers import CustomerSerializer, LoanSerializer
+from .models import Customer, Loan, RefundPayment
+from .serializers import CustomerSerializer, LoanSerializer, RefundPaymentSerializer
 from .services import LoanService
 
 
@@ -63,4 +63,18 @@ class LoanViewSet(
         serializer.save(total_amount=total_amount)
         if change_loan_payments:
             self.service.create_loan_payments(serializer.instance)
+
+
+class RefundPaymentViewSet(
+    mixins.CreateModelMixin,
+    viewsets.GenericViewSet,
+):
+    permission_classes = [IsAuthenticated, ]
+    serializer_class = RefundPaymentSerializer
+    queryset = RefundPayment.objects.all()
+    service = LoanService
+
+    def perform_create(self, serializer):
+        serializer.save()
+        self.service.refund_payment_to_loan(serializer.instance)
 
